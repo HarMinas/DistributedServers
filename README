@@ -1,0 +1,57 @@
+
+Author: Harutyun Minasyan
+Student ID: 5639-3401-95
+
+
+
+
+Project Desciption:
+
+	An distirbuted server application that handles word lookup with 3 different operations: search, prefix and suffix.
+	The application is made of six programs:
+
+		-A Client (client.cpp), which boots up, established a connection with an aws server, sends a command and an input to it and displays the results received back from the aws.
+		-A Monitor (monitor.cpp) which boots up, establishes a connection with an aws server, and displays messages received from the aws. The program distingushes from the 3 commands specified above and displays messages appropriate for each.
+		-An aws server (aws.cpp) that boots up, starts listening for incoming connections on its TCP ports, creates UDP port. When the aws receives a request from the client, it forwards this request to 3 back-end servers, which do the specified operations and send the results back to the aws server. The aws server then combines the results from the 3 back end servers and sends it to the client and the monitor.
+		-3 BackEnd servers (serverA.cpp, serverB.cpp, serverC.cpp). These servers boot up, create a UDP port and when they receive requests, they perform the operation specified in the requst on the input also specified in the reques. Then, each of them sends the results to the aws server.
+
+	All the parties involved conform to a sending and receiving UDP and TCP protocols. These protocols are very similar and the only differece between them is that the UDP send/recv protocols use system calls sendto()/recvfrom(), but TCP send/recv uses send()/recv() system calls. 
+
+						*********Send/Receive protocol description*************
+
+	Note: these protocols are implied, meaning that all participating parties have to have either the UDP, TCP or both versions implemented and defined individually. The protocol was developed by the author of this application.
+
+	Only a vector<string> can be sent and received through the methods in the protocol. When a sender sends a vector, the strings in that vector are sent individually and for each one an acknoledgement has to be sent back. The acknoledgement is the lenght of the string that the receiver has received. The sender check to see if the length sent by the receiver matches the length of the string it sent. If it does not, the sender sends the string again. If it does, the sender sends the next string. 
+	The sends and receives on either side of the communication have been synchonized by comlementary pairing to avoid confusion.
+
+	protocol limitation: only vectors of string, or string (using sendString()) can be sent using this protocol. Integer and other data types have to have converting mechanizm to work. 
+
+
+	                   **************Data Encoding protocol*********************
+	Each participating party conforms to this protocol to understand the meaning of the transfered data.
+
+	Protocol Description:
+	All data is transfered as vectors of strings. Each party is expected to read and write into these vectors in a specific manner.
+
+	-The Client: The client gathers the operation type (passed as an argument to main on index 1) and the input (passed as an argument to main on index 2). The operation is stored in the outgoing vector at index 0, and the input at index 1. For a received vector, the index 0 always contains the operation, index 1 always contains the input. If the operation was seach, index 2 will contain the definition of the input or null string if non was found. If the operation was prefix/suffix, indexes from 2 to the end of the vector will contain the values of the words. if no matches were found for prefix and suffix, the index 2 will contain a null string.
+
+	-The Monitor: The monitor does not send anything (except acknoledgments of receipt) to anyone.  For a received vector, the index 0 always contains the operation, index 1 always contains the input. If the operation was seach, index 2 will contain the definition of the input or null string if non was found, index 3 will contain a similar word or null if none was found, and index 4 will contain the definition of the similar word or null if non was found. If the operation was prefix/suffix, indexes from 2 to the end of the vector will contain the values of the words. if no matches were found for prefix and suffix, the index 2 will contain a null string.
+
+	-The BackEnd Servers: The back end server receives a vector in which operation is always stored at index 0, and the input at index 1. For the outgoing vector, index 0 will contain the operation, index 1 the input. if operation was search, index 2 will contain the definition or null if non was found. Index 3 will contain the first similar word and the following index its definition. all subsequesnt indexes will contain found similar words and their definitions in the next index. If no similar word was found, than vector size should be 3 (containing only operation, input and definition/null).
+	For suffix/prefix operation, if no matches were found, the vector size will be two. If matches are found, they will be starting from index 2.
+
+	-The AWS Server: The AWS server first needs to receive a request from the client. The request should be a vector of only two strings. The first is the operation, the second the input. AWS copies the elements in the request and forwards the request to the 3 back end servers over UDP. For the incoming vectors from each backend server, index 0 will contain the operation, index 1 the input. if operation was search, index 2 will contain the definition or null if non was found. Index 3 will contain the first similar word and the following index its definition. all subsequesnt indexes will contain found similar words and their definitions in the next index. If no similar word was found, than vector size should be 3 (containing only operation, input and definition/null).
+	For suffix/prefix operation, if no matches were found, the vector size will be two. If matches are found, they will be starting from index 2.
+
+	Makefile rules:
+	- To compile all programs together, use "make all" command from the project directory.
+	- To run the aws, use "make aws" command.
+	- To run the monitor, use "make monitor" command.
+	- To run the back servers A,B and C, use "make server#" where # stands for the server ID (A, B, or C).
+	- To run the client use format "./client operation input, where input can be any string, the operations has to be one of {search, prefix, suffix}.
+
+
+No outside code is used in this work.
+
+
+
